@@ -1,0 +1,37 @@
+#! /usr/bin/python3
+from argparse import ArgumentParser
+from llmnr import Sender
+parser = ArgumentParser(description="""
+Run LLMNR queries of type A, AAAA, PTR or ANY
+and print the results.  The default type is A.
+""")
+parser.add_argument('name_or_address')
+parser.add_argument(
+    '-q', '--qtype', choices=['A', 'AAAA', 'PTR', 'ANY'], default='A',
+    help='the query type (default is A)')
+parser.add_argument(
+    '-6', '--useIPv6',
+    help='use IPv6 instead of IPv4.',
+    action='store_true')
+parser.add_argument(
+    '-i', '--interface',
+    help='specify a network interface. E.g. -i eth1')
+parser.add_argument(
+    '-a', '--address',
+    help='send the query to ADDRESS by unicast TCP')
+ 
+def main():
+    args = parser.parse_args()
+    family = 'inet6' if args.useIPv6 else 'inet'
+    iface = args.interface
+    s = Sender(iface, family)
+    qtype = args.qtype if args.qtype != 'ANY' else '*'
+    answers = s.ask(args.name_or_address, qtype, args.address)
+    if not answers:
+        print('No response.')
+    else:
+        for qtype, answer in answers:
+            print('%s: %s'%(qtype, answer))
+
+if __name__ == '__main__':
+    main()
