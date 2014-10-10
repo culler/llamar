@@ -183,18 +183,18 @@ class Sender(object):
                 sent += query_socket.send(data[sent:])
             # This sends a FIN
             query_socket.shutdown(socket.SHUT_WR)
+            received = bytes()
+            while True:
+                data = query_socket.recv(8192)
+                if not data:
+                    break
+                received += data
+            query_socket.close()
         except socket.error as e:
             if str(e) != 'timed out':
                 print('TCP query failed: %s'%e)
             query_socket.close()
             return
-        received = bytes()
-        while True:
-            data = query_socket.recv(8192)
-            if not data:
-                break
-            received += data
-        query_socket.close()
         try:
             return Packet(bytearray(received))
         except:

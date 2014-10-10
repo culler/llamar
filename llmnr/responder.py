@@ -33,7 +33,11 @@ IP_PKTINFO=8
 # http://download.microsoft.com/download/9/5/E/.../%5BMS-LLMNRP%5D.pdf 
 
 class Responder(object):
-    """Simple LLMNR responder that answers A, AAAA and PTR queries.
+    """A simple LLMNR responder that answers A, AAAA and PTR queries.
+    Queries are handled separately for each network interface
+    specified in the config file which is marked as UP.  The answer to
+    an A or AAAA query is the primary address for the interface.
+    PTR queries for secondary addresses are ignored.
 
     """
     JITTER_INTERVAL = 0.1
@@ -241,7 +245,6 @@ class Responder(object):
                         print('Ignored unicast UDP query from ', sender)
                         try:
                             P = Packet(bytearray(received))
-                            print(P.questions[0])
                         except:
                             pass
                         continue
@@ -288,6 +291,7 @@ class Responder(object):
                         octets = labels[:-2]
                         octets.reverse()
                         address = '.'.join(octets)
+                        packed = socket.inet_aton(address)
                     elif labels[-2] == 'ip6':
                         nibbles = labels[:-2]
                         nibbles.reverse()
@@ -297,14 +301,13 @@ class Responder(object):
                         address = socket.inet_ntop(socket.AF_INET6, packed)
                     else:
                         continue
-                    if address not in self.packed_addresses:
+                    if  packed not in self.packed_addresses:
                         continue
-                    # Note: this will return lower case names only.
                     try:
                         name = self._dots_to_dns(self.config.get_name(address))
                         answers.append( ('PTR', name) )
                     except:
-                        continue
+                        raise #continue
                     # RFC 4795 says "If a responder is authoritative
                     # for a name, it MUST respond with RCODE=0 and an
                     # empty answer section, if the type of query does
