@@ -205,21 +205,21 @@ class Packet(object):
         return self.flags&0x4 != 0
     @C.setter
     def C(self, value):
-        self.set_bit(0x4, value)
+        self._set_bit(0x4, value)
     @property
     def TC(self):
         """Packet has been truncated."""
         return self.flags&0x2 != 0
     @TC.setter
     def TC(self, value):
-        self.set_bit(0x2, value)
+        self._set_bit(0x2, value)
     @property
     def T(self):
         """This is a tentative response."""
         return self.flags&0x1 != 0
     @T.setter
     def T(self, value):
-        self.set_bit(0x1), value
+        self._set_bit(0x1), value
     @property
     def QDCOUNT(self):
         return len(self.questions)

@@ -60,14 +60,6 @@ class Sender(object):
                 raise ValueError('Unknown interface.')
             self.address = link.addresses[family]
 
-    def _delay(self):
-        """Sleep for a random time interval between 0 and JITTER_INTERVAL.
-
-        RFC 4795 says each query transmission SHOULD be delayed like this.
-        Microsoft says they SHOULD NOT be delayed. 
-        """
-        time.sleep(self.JITTER_INTERVAL*random())
-
     def ask(self, hostname, qtype='A', server=None):
         """Send an LLMNR query of specified type (A, AAAA or PTR).  If a
         server address is specified the request will be sent using
@@ -102,27 +94,40 @@ class Sender(object):
         self.ID += 1
         question = Question(hostname, qtype=qtype)
         query.questions.append(question)
-        response = None
         if server is None:
-            response = self._UDP_communicate(query, query_socket)
+            rs = self._UDP_communicate(query, query_socket)
+            if rs:
+                response, sender = rs
+                if response.TC:
+                    tcp_result = self.ask(hostname, qtype, sender[0])
+                    if tcp_result:
+                        return tcp_result
         else:
             response = self._TCP_communicate(query, query_socket, server)
-        query_socket.close()
-        if response:
-            result = []
-            for answer in response.answers:
-                data = bytes(answer.RDATA)
-                qtype = query_ntoa[answer.TYPE]
-                if qtype == 'A':
-                    rr = socket.inet_ntop(socket.AF_INET, data)
-                elif qtype == 'AAAA':
-                    rr = socket.inet_ntop(socket.AF_INET6, data)
-                elif qtype == 'PTR':
-                    rr = self._dns_to_dotted(answer.RDATA)
-                else:
-                    rr = answer.RDATA
-                result.append((qtype, rr))
-            return result
+        if response is None:
+            return
+        result = []
+        for answer in response.answers:
+            data = bytes(answer.RDATA)
+            qtype = query_ntoa[answer.TYPE]
+            if qtype == 'A':
+                rr = socket.inet_ntop(socket.AF_INET, data)
+            elif qtype == 'AAAA':
+                rr = socket.inet_ntop(socket.AF_INET6, data)
+            elif qtype == 'PTR':
+                rr = self._dns_to_dotted(answer.RDATA)
+            else:
+                rr = answer.RDATA
+            result.append((qtype, rr))
+        return result
+
+    def _delay(self):
+        """Sleep for a random time interval between 0 and JITTER_INTERVAL.
+
+        RFC 4795 says each query transmission SHOULD be delayed like this.
+        Microsoft says they SHOULD NOT be delayed. 
+        """
+        time.sleep(self.JITTER_INTERVAL*random())
 
     def _dns_to_dotted(self, data):
         """Return a name as a dotted-quad string.
@@ -140,27 +145,24 @@ class Sender(object):
     def _UDP_communicate(self, query, query_socket):
         timeout = 0.2
         query_socket.settimeout(timeout)
+        self._delay()
         query_socket.sendto(query.bytes(),
                             (LLMNR_addrs[self.AF], LLMNR_PORT) )
         for n in range(3):
             try:
-                self._delay()
-                received = query_socket.recv(8192)
-                try:
-                    # We should check the TC flag.  If set, resend the
-                    # query over TCP.
-                    # If the C flag is set, we are supposed to collect
-                    # responses and concatenate them.
-                    return Packet(bytearray(received))
-                except:
-                    print('Bad packet!')
-                    print(received)
-                    return
+                received, sender = query_socket.recvfrom(8192)
+                break
             except socket.timeout:
                 timeout *= 2
                 query_socket.settimeout(timeout)
                 continue
-            break
+        query_socket.close()
+        try:
+            result = Packet(bytearray(received)), sender
+            return result
+        except:
+            print('Bad packet!')
+            print(received)
 
     def _TCP_communicate(self, query, query_socket, server):
         server_AF = self._AF(server)
@@ -180,6 +182,7 @@ class Sender(object):
         except socket.error as e:
             if str(e) != 'timed out':
                 print('TCP query failed: %s'%e)
+            query_socket.close()
             return
         received = bytes()
         while True:
@@ -187,6 +190,7 @@ class Sender(object):
             if not data:
                 break
             received += data
+        query_socket.close()
         try:
             return Packet(bytearray(received))
         except:
