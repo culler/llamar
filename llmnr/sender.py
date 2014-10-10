@@ -94,6 +94,7 @@ class Sender(object):
         self.ID += 1
         question = Question(hostname, qtype=qtype)
         query.questions.append(question)
+        response = None
         if server is None:
             rs = self._UDP_communicate(query, query_socket)
             if rs:
@@ -148,6 +149,7 @@ class Sender(object):
         self._delay()
         query_socket.sendto(query.bytes(),
                             (LLMNR_addrs[self.AF], LLMNR_PORT) )
+        received = None
         for n in range(3):
             try:
                 received, sender = query_socket.recvfrom(8192)
@@ -157,6 +159,8 @@ class Sender(object):
                 query_socket.settimeout(timeout)
                 continue
         query_socket.close()
+        if received is None:
+            return
         try:
             result = Packet(bytearray(received)), sender
             return result
