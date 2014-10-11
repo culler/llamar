@@ -34,6 +34,8 @@ class Sender(object):
 
     """
     JITTER_INTERVAL = 0.1
+    LLMNR_TIMEOUT = 1.0
+    UDP_SOCKET_TIMEOUT = 0.2
 
     def __init__(self, iface=None, family='inet'):
         self.ID = 1
@@ -60,7 +62,7 @@ class Sender(object):
                 raise ValueError('Unknown interface.')
             self.address = link.addresses[family]
 
-    def ask(self, hostname, qtype='A', server=None):
+    def ask(self, hostname, qtype='A', server=None, wait=False):
         """Send an LLMNR query of specified type (A, AAAA or PTR).  If a
         server address is specified the request will be sent using
         unicast TCP.  Otherwise the request will be multicast UDP.
@@ -94,33 +96,45 @@ class Sender(object):
         self.ID += 1
         question = Question(hostname, qtype=qtype)
         query.questions.append(question)
-        response = None
-        if server is None:
-            rs = self._UDP_communicate(query, query_socket)
-            if rs:
-                response, sender = rs
-                if response.TC:
-                    tcp_result = self.ask(hostname, qtype, sender[0])
-                    if tcp_result:
-                        return tcp_result
-        else:
-            response = self._TCP_communicate(query, query_socket, server)
-        if response is None:
+        if server is None:  # normal UDP conversation
+            for n in range(3):
+                responses = self._UDP_communicate(query, query_socket)
+                if responses:
+                    break
+            if not wait:
+                query_socket.close()
+            else:
+                # Keep listening for more responses.
+                query_socket.close()
+            if [packet for packet, sender in responses if packet.C]:
+                return self._handle_conflict(responses)
+            for packet, sender in responses:
+                # Who knows what it means if only some responses are truncated.
+                if packet.TC and len(responses) == 1:
+                    return self.ask(hostname, qtype, sender[0])
+            packets = [packet for packet, sender in responses]
+        else: # send a query by TCP
+            packets = [self._TCP_communicate(query, query_socket, server)]
+        if not packets:
             return
         result = []
-        for answer in response.answers:
-            data = bytes(answer.RDATA)
-            qtype = query_ntoa[answer.TYPE]
-            if qtype == 'A':
-                rr = socket.inet_ntop(socket.AF_INET, data)
-            elif qtype == 'AAAA':
-                rr = socket.inet_ntop(socket.AF_INET6, data)
-            elif qtype == 'PTR':
-                rr = self._dns_to_dotted(answer.RDATA)
-            else:
-                rr = answer.RDATA
-            result.append((qtype, rr))
+        for packet in packets:
+            for answer in packet.answers:
+                data = bytes(answer.RDATA)
+                qtype = query_ntoa[answer.TYPE]
+                if qtype == 'A':
+                    rr = socket.inet_ntop(socket.AF_INET, data)
+                elif qtype == 'AAAA':
+                    rr = socket.inet_ntop(socket.AF_INET6, data)
+                elif qtype == 'PTR':
+                    rr = self._dns_to_dotted(answer.RDATA)
+                else:
+                    rr = answer.RDATA
+                result.append((qtype, rr))
         return result
+
+    def _handle_conflict(self, responses):
+        print('Conflict detected!')
 
     def _delay(self):
         """Sleep for a random time interval between 0 and JITTER_INTERVAL.
@@ -144,30 +158,34 @@ class Sender(object):
         return '.'.join(labels)
 
     def _UDP_communicate(self, query, query_socket):
-        timeout = 0.2
+        timeout = self.UDP_SOCKET_TIMEOUT
         query_socket.settimeout(timeout)
         self._delay()
-        query_socket.sendto(query.bytes(),
-                            (LLMNR_addrs[self.AF], LLMNR_PORT) )
-        received = None
-        for n in range(3):
+        query_socket.sendto(query.bytes(), (LLMNR_addrs[self.AF], LLMNR_PORT) )
+        responses = []
+        self._collect_UDP_responses(query_socket, responses)
+        return responses
+
+    def _collect_UDP_responses(self, query_socket, response_list):
+        start = time.time()
+        timeout = self.LLMNR_TIMEOUT+self.JITTER_INTERVAL
+        while True:
             try:
                 received, sender = query_socket.recvfrom(8192)
-                break
             except socket.timeout:
-                timeout *= 2
-                query_socket.settimeout(timeout)
-                continue
-        query_socket.close()
-        if received is None:
-            return
-        try:
-            result = Packet(bytearray(received)), sender
-            return result
-        except:
-            print('Bad packet!')
-            print(received)
-
+                if time.time() - start > timeout:
+                    break
+                else:
+                    continue
+            try:
+                packet = Packet(bytearray(received))
+                response_list.append( (packet, sender) )
+                if len(response_list) == 1 and not packet.C:
+                    return
+            except:
+                print('Bad packet!')
+                print(received)
+                
     def _TCP_communicate(self, query, query_socket, server):
         server_AF = self._AF(server)
         query_socket.settimeout(1.0)
