@@ -50,7 +50,7 @@ def main():
     if not answers:
         print('No response.')
     else:
-        for qtype, answer in answers:
+        for qtype, answer, server in answers:
             print('%s: %s'%(qtype, answer))
 
 if __name__ == '__main__':

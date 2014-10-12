@@ -35,6 +35,7 @@ class Sender(object):
     """
     JITTER_INTERVAL = 0.1
     LLMNR_TIMEOUT = 1.0
+    TIMEOUT = LLMNR_TIMEOUT + JITTER_INTERVAL
     UDP_SOCKET_TIMEOUT = 0.2
 
     def __init__(self, iface=None, family='inet'):
@@ -101,24 +102,23 @@ class Sender(object):
                 responses = self._UDP_communicate(query, query_socket)
                 if responses:
                     break
-            if not wait:
-                query_socket.close()
-            else:
-                # Keep listening for more responses.
-                query_socket.close()
+            if wait:
+                finished = ( time.time() + self.TIMEOUT)
+                while time.time() < finished:
+                    self._collect_UDP_responses(query_socket, responses)
+            query_socket.close()
             if [packet for packet, sender in responses if packet.C]:
                 return self._handle_conflict(responses)
             for packet, sender in responses:
                 # Who knows what it means if only some responses are truncated.
                 if packet.TC and len(responses) == 1:
                     return self.ask(hostname, qtype, sender[0])
-            packets = [packet for packet, sender in responses]
         else: # send a query by TCP
-            packets = [self._TCP_communicate(query, query_socket, server)]
-        if not packets:
+            responses = [self._TCP_communicate(query, query_socket, server)]
+        if not responses:
             return
         result = []
-        for packet in packets:
+        for packet, server in responses:
             for answer in packet.answers:
                 data = bytes(answer.RDATA)
                 qtype = query_ntoa[answer.TYPE]
@@ -130,7 +130,7 @@ class Sender(object):
                     rr = self._dns_to_dotted(answer.RDATA)
                 else:
                     rr = answer.RDATA
-                result.append((qtype, rr))
+                result.append((qtype, rr, server[0]))
         return result
 
     def _handle_conflict(self, responses):
@@ -214,7 +214,7 @@ class Sender(object):
             query_socket.close()
             return
         try:
-            return Packet(bytearray(received))
+            return (Packet(bytearray(received)), server)
         except:
             print('Bad packet!')
             print(received)

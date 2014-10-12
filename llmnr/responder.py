@@ -47,6 +47,7 @@ class Responder(object):
         self.config = Config()
         self.UDP_sockets = {}
         self.TCP_listeners = {}
+        self.uniqueness = {}
         self._update_sockets()
 
     def __del__(self):

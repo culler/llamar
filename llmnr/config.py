@@ -62,9 +62,7 @@ class Config(ConfigParser):
         """
         self.network.update()
         result = {'inet':[], 'inet6':[]}
-        for link in self.network.links:
-            if link.state != 'UP' or link.name not in self.sections():
-                continue
+        for link in self.current_links():
             address = link.primary_address('inet')
             if address:
                 result['inet'].append(address.string())
@@ -72,6 +70,15 @@ class Config(ConfigParser):
             if address:
                 result['inet6'].append(address.string()+'%'+link.name)
         return result
+
+    def current_links(self):
+        """Return a list of the links which are named in the config file
+        and are in the UP state.
+
+        """
+        self.network.update()
+        return [ link for link in self.network.links
+                 if link.state == 'UP' and link.name in self.sections()]
 
     def get_address(self, hostname, address_family):
         """Return the primary address assigned to a hostname.  Supported
