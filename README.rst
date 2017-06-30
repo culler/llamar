@@ -5,6 +5,8 @@ Llamar
 
 Copyright |copy| 2017, Marc Culler
 
+|
+
 Description
 -----------
 
@@ -35,6 +37,8 @@ The Responder.run() method, when run as a service, makes the host findable by
 Windows computers.  There is also a command line program named busco with will
 run a query and report the result.
 
+|
+
 Applications
 -------------
 
@@ -47,6 +51,8 @@ specifying the name "odroid" for the wlan0 interface on the Arm.  You start a
 service on the Arm which initializes a llamar.Responder and runs its run()
 method.  Now you can open a web browser on the Windows laptop and simply type
 "odroid" into the go box.
+
+|
 
 Example
 --------
@@ -133,7 +139,8 @@ on ace:
    
    C:\Users\culler>ping ace
    Ping request could not find host ace. Please check the name and try again.
-   
+
+|
       
 Installation
 -------------
