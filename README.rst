@@ -5,19 +5,21 @@ LLamar
 
 Copyright |copy| 2017, Marc Culler
 
+|
+
 Description
 -----------
 
 LLamar is a "pure" Python 3 implementation of Microsoft's Link Local Multicast
-Name Resolution protocol
-(`LLMNR<https://en.wikipedia.org/wiki/Link-Local_Multicast_Name_Resolution>LLMNR`_).
+Name Resolution protocol `LLMNR
+<https://en.wikipedia.org/wiki/Link_Local_Multicast_Name_Resolution>`_.
 It currently depends on the iproute command to locate network interfaces on the
-host system, and hence only runs only on linux systems which provide iproute.
+host system, and hence only runs on linux systems which provide iproute.
 However, the protocol implementation is not system dependent so, with a modest
-amount of additional work LLamar could also be made to work on other systems.
+amount of additional work, LLamar could also be made to work on other systems.
 
-The LLMNR protocol provides
-`zero-configuration networking<https://en.wikipedia.org/wiki/Zero-configuration_networking>`_
+The LLMNR protocol provides `zero-configuration networking
+<https://en.wikipedia.org/wiki/Zero-configuration_networking>`_
 as does Apple's "Bonjour" and its linux implementation avahi.  In
 other words, it can be used to find the IP addresses of other machines
 on the same LAN without a DNS server.  It uses packets which are
@@ -35,6 +37,8 @@ The Responder.run() method, when run as a service, makes the host findable by
 Windows computers.  There is also a command line program named busco with will
 run a query and report the result.
 
+|
+
 Applications
 -------------
 
@@ -47,6 +51,8 @@ specifying the name "odroid" for the wlan0 interface on the Arm.  You start a
 service on the Arm which initializes a llamar.Responder and runs its run()
 method.  Now you can open a web browser on the Windows laptop and simply type
 "odroid" into the go box.
+
+|
 
 Example
 --------
@@ -133,7 +139,8 @@ on ace:
    
    C:\Users\culler>ping ace
    Ping request could not find host ace. Please check the name and try again.
-   
+
+|
       
 Installation
 -------------
