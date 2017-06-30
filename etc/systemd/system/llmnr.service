@@ -1,0 +1,8 @@
+[Unit]
+Description=LLMNR responder
+
+[Service]
+ExecStart=/usr/local/bin/llmnr
+
+[Install]
+WantedBy=multi-user.target

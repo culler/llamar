@@ -354,3 +354,9 @@ class Responder(object):
                         # The socket will be closed when garbage collected.
                 except socket.error as e:
                     self.logger.error('Error in run.', exc_info=True)
+
+def main():
+    Responder().run()
+    
+if __name__ == '__main__':
+    main()

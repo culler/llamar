@@ -9,5 +9,6 @@ setup(name='LLamar',
       url='https://bitbucket.org/marc_culler/llamar/',
       license='GPLv2+',
       packages=['llmnr'],
-      entry_points = {'console_scripts': ['busco = llmnr.busco:main']},
+      entry_points = {'console_scripts': ['busco = llmnr.busco:main',
+                                          'llmnr = llmnr.responder:main']},
      )
