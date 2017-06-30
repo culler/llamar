@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+import sys
+assert sys.version_info.major==3, 'This is a Python 3 module.'
+
 from setuptools import setup
 
 setup(name='LLamar',
