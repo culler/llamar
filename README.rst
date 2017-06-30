@@ -9,15 +9,15 @@ Description
 -----------
 
 LLamar is a "pure" Python 3 implementation of Microsoft's Link Local Multicast
-Name Resolution protocol
-(`LLMNR<https://en.wikipedia.org/wiki/Link-Local_Multicast_Name_Resolution>LLMNR`_).
+Name Resolution protocol `LLMNR
+<https://en.wikipedia.org/wiki/Link_Local_Multicast_Name_Resolution>`_.
 It currently depends on the iproute command to locate network interfaces on the
 host system, and hence only runs only on linux systems which provide iproute.
 However, the protocol implementation is not system dependent so, with a modest
-amount of additional work Llamar could also be made to work on other systems.
+amount of additional work, Llamar could also be made to work on other systems.
 
-The LLMNR protocol provides
-`zero-configuration networking<https://en.wikipedia.org/wiki/Zero-configuration_networking>`_
+The LLMNR protocol provides `zero-configuration networking
+<https://en.wikipedia.org/wiki/Zero-configuration_networking>`_
 as does Apple's "Bonjour" and its linux implementation avahi.  In
 other words, it can be used to find the IP addresses of other machines
 on the same LAN without a DNS server.  It uses packets which are
