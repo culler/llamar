@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright© 2014 by Marc Culler and others.
+# Copyright© 2014-2017 by Marc Culler and others.
 #
 # This file is part of LLamar.
 #

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright© 2014 by Marc Culler and others.
+# Copyright© 2014-2017 by Marc Culler and others.
 #
 # This file is part of LLamar.
 #
@@ -19,8 +19,9 @@
 # References:
 # https://tools.ietf.org/html/rfc4795
 # http://msdn.microsoft.com/en-us/library/dd240328.aspx
+# http://download.microsoft.com/download/9/5/E/.../%5BMS-LLMNRP%5D.pdf 
 
-import socket, struct, select, time
+import socket, struct, select, time, logging
 from random import random
 from .queries import query_ntoa, query_aton
 from .sender import Sender
@@ -28,9 +29,6 @@ from .packets import Packet, ResourceRecord, LLMNR_addrs, LLMNR_PORT
 from .config import Config, NoSectionError
 from .iproute import NetworkState
 IP_PKTINFO=8
-
-# https://tools.ietf.org/html/rfc4795
-# http://download.microsoft.com/download/9/5/E/.../%5BMS-LLMNRP%5D.pdf 
 
 class Responder(object):
     """A simple LLMNR responder that answers A, AAAA and PTR queries.
@@ -43,6 +41,8 @@ class Responder(object):
     JITTER_INTERVAL = 0.1
 
     def __init__(self, ttl=30):
+        self.logger = logging.getLogger('llamar')
+        self.logger.debug('Initializing LLMNR Responder.')
         self.ttl = ttl
         self.config = Config()
         self.UDP_sockets = {}
@@ -51,6 +51,13 @@ class Responder(object):
         self._update_sockets()
 
     def __del__(self):
+        self.close()
+
+    @classmethod
+    def debug(cls):
+        logging.basicConfig(level=logging.DEBUG)
+
+    def close(self):
         for sock in self.UDP_sockets.keys() | self.TCP_listeners.keys():
             try:
                 sock.close()
@@ -112,7 +119,7 @@ class Responder(object):
         except socket.error as e:
             if udpsocket != None:
                 udpsocket.close()
-            print(e)
+            logger.error('Error in _create_UDP_socket.', exc_info=True)
             
     def _update_UDP_sockets(self):
         """Make sure we have a UDP socket for each configured address."""
@@ -125,16 +132,16 @@ class Responder(object):
                     udpsocket = self._create_UDP_socket(family, address)
                     if udpsocket:
                         self.UDP_sockets[udpsocket] = address
-                        print('UDP socket at %s'%address)
+                        self.logger.debug('Created UDP socket at %s.'%address)
 
     def _create_TCP_listener(self, family, address):
         AF = socket.AF_INET if family=='inet' else socket.AF_INET6
         try:
             sockaddr = socket.getaddrinfo(
-                address, LLMNR_PORT, AF,
+                address.split('%')[0], LLMNR_PORT, AF,
                 socket.SOCK_STREAM, socket.SOL_TCP)[0][-1]
         except socket.gaierror as e:
-            print(e)
+            self.logger.error('GAI Error in _create_TCP_listener.', exc_info=True)
             return None
         try:
             tcpsocket = socket.socket(AF, socket.SOCK_STREAM)
@@ -152,7 +159,7 @@ class Responder(object):
         except socket.error as e:
             if tcpsocket != None:
                 tcpsocket.close()
-            print(e)
+            self.logger.error('Error in _create_TCP_listener.', exc_info=True)
 
     def _update_TCP_listeners(self):
         """Make sure we have a TCP listener for each configured address.
@@ -169,7 +176,7 @@ class Responder(object):
                     listener = self._create_TCP_listener(family, address)
                     if listener:
                         self.TCP_listeners[listener] = address
-                        print('TCP listener at %s'%address)
+                        self.logger.debug('Created TCP listener at %s.'%address)
 
     def _query_is_valid(self, packet):
         """Is this a query packet that deserves a response?"""
@@ -238,18 +245,20 @@ class Responder(object):
             active_socket = read[0]
             # Receive the query packet
             if self._is_datagram(active_socket):
+                self.logger.debug('Received datagram.')
                 received, info, flags, sender = active_socket.recvmsg(
                     9194, 256)
                 if info:
                     if not self._is_multicast(info[0]):
                         # "Unicast UDP queries MUST be silently discarded."
-                        print('Ignored unicast UDP query from ', sender)
+                        self.logger.debug('Ignored unicast UDP query from %s.'%sender)
                         try:
                             P = Packet(bytearray(received))
                         except:
                             pass
                         continue
             else:
+                self.logger.debug('Received TCP packet.')
                 connection, sender = active_socket.accept()
                 received = bytes()
                 while True:
@@ -260,13 +269,13 @@ class Responder(object):
             try:
                 query = Packet(bytearray(received))
             except:
-                print('Bad packet from ', sender)
+                self.logger.error('Bad packet from %s'%sender)
                 continue
             # Construct an answer, if the query is valid.
             if self._query_is_valid(query):
                 Q = query.questions[0]
                 qtype, qname = Q.qtype(), Q.name().lower()
-                print( '%s query from %s for %s'%(qtype, sender, qname) )
+                self.logger.debug( 'Received %s query from %s for %s.'%(qtype, sender, qname) )
                 answers = []
                 if qtype == 'A' or qtype == '*':
                     try:
@@ -329,7 +338,7 @@ class Responder(object):
                 if qtype not in ('A', 'AAAA', 'PTR', '*'):
                     continue
                 # Send a response
-                print( 'responding' )
+                self.logger.debug('Responding.')
                 response = self._response_from_query(query, answers)
                 self._delay()
                 try:
@@ -344,4 +353,4 @@ class Responder(object):
                         connection.shutdown(socket.SHUT_WR)
                         # The socket will be closed when garbage collected.
                 except socket.error as e:
-                    print(e)
+                    self.logger.error('Error in run.', exc_info=True)
