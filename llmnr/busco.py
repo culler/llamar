@@ -20,7 +20,7 @@
 # https://tools.ietf.org/html/rfc4795
 # http://msdn.microsoft.com/en-us/library/dd240328.aspx
 from argparse import ArgumentParser
-from llmnr import Sender
+from . import Sender
 parser = ArgumentParser(description="""
 Run LLMNR queries of type A, AAAA, PTR or ANY
 and print the results.  The default type is A.

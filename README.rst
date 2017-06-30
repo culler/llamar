@@ -1,6 +1,6 @@
 .. |copy| unicode:: 0xA9 .. copyright sign
 
-Llamar
+LLamar
 ======
 
 Copyright |copy| 2017, Marc Culler
@@ -14,7 +14,7 @@ Name Resolution protocol
 It currently depends on the iproute command to locate network interfaces on the
 host system, and hence only runs only on linux systems which provide iproute.
 However, the protocol implementation is not system dependent so, with a modest
-amount of additional work Llamar could also be made to work on other systems.
+amount of additional work LLamar could also be made to work on other systems.
 
 The LLMNR protocol provides
 `zero-configuration networking<https://en.wikipedia.org/wiki/Zero-configuration_networking>`_
@@ -29,7 +29,7 @@ Modern Windows systems respond to LLMNR queries on any network interface which
 has "network discovery" enabled.  This is enabled by default for a "Home
 Network" and disabled by default for a "Public Network".
 
-The Llamar package provides a Sender class, which sends LLNMR queries and parses
+The LLamar package provides a Sender class, which sends LLNMR queries and parses
 the responses, and a Responder class which receives and replies to LLMNR queries.
 The Responder.run() method, when run as a service, makes the host findable by
 Windows computers.  There is also a command line program named busco with will
@@ -38,7 +38,7 @@ run a query and report the result.
 Applications
 -------------
 
-Here is a typical application for Llamar.  You have an embedded linux system,
+Here is a typical application for LLamar.  You have an embedded linux system,
 say running on an Odroid Arm computer.  It provides a webserver on port 80 to be
 used by other computers on your network.  The Arm gets addresses dynamically
 from DHCP.  You want to be able to connect to its server from a Windows laptop
@@ -59,12 +59,12 @@ From ace I can find the IP address of VBoxPC like this:
 
 ::
    
-   culler@ace:~/programs/llamar$ bin/busco VboxPC
+   culler@ace:~/programs/llamar$ busco VboxPC
    A: 192.168.0.121
-   culler@ace:~/programs/llamar$ bin/busco -q AAAA VboxPC
+   culler@ace:~/programs/llamar$ busco -q AAAA VboxPC
    AAAA: ::c82e:9545:4e69:b52b
    AAAA: fe80::c82e:9545:4e69:b52b
-   culler@ace:~/programs/llamar$ bin/busco -q PTR 192.168.0.121
+   culler@ace:~/programs/llamar$ busco -q PTR 192.168.0.121
    PTR: VboxPC
 
    

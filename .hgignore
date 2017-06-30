@@ -1,3 +1,6 @@
 syntax: glob
 *.pyc
 *.orig
+*.egg-info
+build
+dist
