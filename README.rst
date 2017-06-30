@@ -10,19 +10,20 @@ Description
 
 LLamar is a "pure" Python 3 implementation of Microsoft's Link Local Multicast
 Name Resolution protocol
-(`<https://en.wikipedia.org/wiki/Link-Local_Multicast_Name_Resolution>LLMNR`).
+(`LLMNR<https://en.wikipedia.org/wiki/Link-Local_Multicast_Name_Resolution>LLMNR`_).
 It currently depends on the iproute command to locate network interfaces on the
 host system, and hence only runs only on linux systems which provide iproute.
 However, the protocol implementation is not system dependent so, with a modest
 amount of additional work Llamar could also be made to work on other systems.
 
 The LLMNR protocol provides
-`<https://en.wikipedia.org/wiki/Zero-configuration_networking>zero-configuration
-networking` as does Apple's "Bonjour" and its linux implementation avahi.  In
-other words, it can be used to find the IP addresses of other machines on the
-same LAN without a DNS server.  It uses packets which are slightly modified from
-DNS packets and supports A, AAAA and PTR queries. LLMNR is much simpler and much
-quieter than the relatively bloated and noisy Bonjour/Avahi.
+`zero-configuration networking<https://en.wikipedia.org/wiki/Zero-configuration_networking>`_
+as does Apple's "Bonjour" and its linux implementation avahi.  In
+other words, it can be used to find the IP addresses of other machines
+on the same LAN without a DNS server.  It uses packets which are
+slightly modified from DNS packets and supports A, AAAA and PTR
+queries. LLMNR is much simpler and much quieter than the relatively
+bloated and noisy Bonjour/Avahi.
 
 Modern Windows systems respond to LLMNR queries on any network interface which
 has "network discovery" enabled.  This is enabled by default for a "Home
@@ -71,7 +72,7 @@ Now I would like to find the address of ace from VBoxPC.  First I start an LLMNR
 Responder running on ace.  We will enable debug mode to see what happens.   
    
 ::
-
+   
    culler@ace:~/programs/llamar$ python3
    Python 3.5.2 (default, Nov 17 2016, 17:05:23) 
    [GCC 5.4.0 20160609] on linux
@@ -86,6 +87,7 @@ address for ace, which it will do by broadcasting LLMNR queries.  The Responder 
 ace will reply with an address.  This is what I see on ace, in debug mode:
 
 ::
+   
    DEBUG:llamar:Received datagram.
    DEBUG:llamar:Received A query from ('fe80::c82e:9545:4e69:b52b%wlan0', 59293, 0, 2) for ace.
    DEBUG:llamar:Responding.
@@ -99,6 +101,7 @@ ace will reply with an address.  This is what I see on ace, in debug mode:
 And, on VBoxPC, when I run the ping command it looks like this:
 
 ::
+   
    C:\Users\culler>ping ace
    
    Pinging ace [::bcba:928d:7d4f:530a] with 32 bytes of data:
@@ -115,7 +118,7 @@ And, on VBoxPC, when I run the ping command it looks like this:
 Now let's kill the Responder and close all of its sockets:
 
 ::
-
+   
    ^CTraceback (most recent call last):
    File "<stdin>", line 1, in <module>
    File "/home/culler/programs/llamar/llmnr/responder.py", line 244, in run
@@ -127,7 +130,7 @@ And, this is what happens if I try the ping again with no responder running
 on ace:
 
 ::
-
+   
    C:\Users\culler>ping ace
    Ping request could not find host ace. Please check the name and try again.
    
