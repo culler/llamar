@@ -12,7 +12,7 @@ LLamar is a "pure" Python 3 implementation of Microsoft's Link Local Multicast
 Name Resolution protocol `LLMNR
 <https://en.wikipedia.org/wiki/Link_Local_Multicast_Name_Resolution>`_.
 It currently depends on the iproute command to locate network interfaces on the
-host system, and hence only runs only on linux systems which provide iproute.
+host system, and hence only runs on linux systems which provide iproute.
 However, the protocol implementation is not system dependent so, with a modest
 amount of additional work, Llamar could also be made to work on other systems.
 
